@@ -320,12 +320,24 @@
   .gallery-search-wrap{max-width:440px;margin:0 auto 44px;}
   .gallery-search-box{position:relative;}
   .gallery-search{
-    width:100%;padding:14px 20px;border:1px solid var(--line);border-radius:30px;
+    width:100%;padding:14px 44px 14px 20px;border:1px solid var(--line);border-radius:30px;
     font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;font-size:15px;color:var(--text);
     background:var(--surface);outline:none;
     transition:border-color .2s ease, box-shadow .2s ease;
   }
   .gallery-search:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(23,137,179,.14);}
+  /* 搜索框里的清除(✕)按钮：默认隐藏，有输入内容时才显示 */
+  .gallery-search-clear{
+    display:none;
+    position:absolute;top:50%;right:8px;transform:translateY(-50%);
+    width:26px;height:26px;border:none;border-radius:50%;
+    background:transparent;color:var(--text-dim);
+    font-size:18px;line-height:1;cursor:pointer;
+    align-items:center;justify-content:center;
+    transition:background .15s ease, color .15s ease;
+  }
+  .gallery-search-clear.show{display:flex;}
+  .gallery-search-clear:hover{background:var(--surface-2);color:var(--amber-dim);}
   /* 搜索下拉建议列表 */
   .gallery-suggestions{
     list-style:none;margin:0;padding:0;
@@ -408,6 +420,9 @@
         <input type="text" id="gallerySearch" class="gallery-search" autocomplete="off"
                placeholder="Search products..."
                oninput="filterGallery()" onfocus="showSuggestions()">
+        <!-- 清除按钮：有输入内容时才显示，点击清空搜索框并恢复显示全部产品 -->
+        <button type="button" class="gallery-search-clear" id="gallerySearchClear"
+                aria-label="Clear search" title="Clear">&times;</button>
         <!-- 搜索建议下拉列表：随输入实时列出图库中所有相关产品 -->
         <ul class="gallery-suggestions" id="gallerySuggestions"></ul>
       </div>
@@ -462,7 +477,8 @@
      不负责产生卡片本身，所以就算这段脚本没有执行，
      产品图片和名称仍然会正常显示。 */
   function filterGallery(){
-    var q = document.getElementById('gallerySearch').value.trim().toLowerCase();
+    var input = document.getElementById('gallerySearch');
+    var q = input.value.trim().toLowerCase();
     var cards = document.querySelectorAll('#galleryGrid .gallery-card');
     var visibleCount = 0;
 
@@ -475,7 +491,22 @@
     });
 
     document.getElementById('galleryEmpty').style.display = (visibleCount === 0) ? 'block' : 'none';
+
+    // 清除按钮只在输入框有内容时才显示
+    var clearBtn = document.getElementById('gallerySearchClear');
+    if(clearBtn) clearBtn.classList.toggle('show', input.value.length > 0);
+
     renderSuggestions();
+  }
+
+  /* 点击清除按钮（✕）：清空搜索框，重新显示全部产品，并收起下拉建议 */
+  function clearGallerySearch(){
+    var input = document.getElementById('gallerySearch');
+    input.value = '';
+    filterGallery();
+    var list = document.getElementById('gallerySuggestions');
+    if(list) list.classList.remove('show');
+    input.focus();
   }
 
   /* 当前显示语言（跟随已保存的语言偏好） */
@@ -551,6 +582,14 @@
       input.placeholder = (currentGalleryLang() === 'zh') ? '搜索产品...' : 'Search products...';
     }
   })();
+
+  var gallerySearchClearBtn = document.getElementById('gallerySearchClear');
+  if(gallerySearchClearBtn){
+    gallerySearchClearBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      clearGallerySearch();
+    });
+  }
 </script>
 
 <footer class="wrap">
