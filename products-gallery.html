@@ -54,7 +54,21 @@
   }
   .navlinks{display:flex;gap:26px;font-size:14px;color:var(--text-dim);}
   .navlinks a:hover{color:var(--amber);}
+  .nav{position:relative;}
   .nav-right{display:flex;align-items:center;gap:16px;}
+  /* 手机版汉堡菜单按钮：桌面端默认隐藏 */
+  .nav-toggle{
+    display:none;flex-direction:column;justify-content:center;align-items:center;
+    gap:5px;width:34px;height:34px;background:transparent;border:none;cursor:pointer;
+    flex:none;padding:0;
+  }
+  .nav-toggle span{
+    display:block;width:22px;height:2px;background:var(--text);border-radius:2px;
+    transition:transform .25s ease, opacity .25s ease;
+  }
+  .nav-toggle.active span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+  .nav-toggle.active span:nth-child(2){opacity:0;}
+  .nav-toggle.active span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
   .lang-switch{
     display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:12px;
   }
@@ -220,7 +234,18 @@
   }
 
   @media(max-width:860px){
-    .navlinks{display:none;}
+    .nav-toggle{display:flex;}
+    /* 导航链接在窄屏下变成汉堡菜单展开的下拉面板，默认收起 */
+    .navlinks{
+      display:none;flex-direction:column;gap:0;
+      position:absolute;top:100%;left:0;right:0;
+      background:var(--surface);border-top:1px solid var(--line);
+      box-shadow:0 16px 32px -18px rgba(32,36,43,0.28);
+      padding:6px 0;z-index:40;
+    }
+    .navlinks.open{display:flex;}
+    .navlinks a{padding:14px 28px;border-bottom:1px solid var(--line);}
+    .navlinks a:last-child{border-bottom:none;}
     .hero-grid,.contact-grid{grid-template-columns:1fr;}
     .about-facts{grid-template-columns:1fr 1fr;}
     .hero{padding:52px 0 44px;}
@@ -361,7 +386,10 @@
         <button class="lang-btn active" data-setlang="en" onclick="setLang('en')">EN</button>
         <button class="lang-btn" data-setlang="zh" onclick="setLang('zh')">中文</button>
       </div>
-
+      <!-- 手机版汉堡菜单按钮：仅在窄屏下显示，点击展开/收起导航链接 -->
+      <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
   <div class="topbar"></div>
@@ -546,6 +574,38 @@
     var saved = 'en';
     try{ saved = localStorage.getItem('gen2lang') || saved; }catch(e){}
     setLang(saved);
+  })();
+
+  /* 手机版汉堡菜单：点击按钮展开/收起导航链接 */
+  (function(){
+    var toggle = document.getElementById('navToggle');
+    var navLinks = document.querySelector('header .navlinks');
+    if(!toggle || !navLinks) return;
+
+    function closeMenu(){
+      navLinks.classList.remove('open');
+      toggle.classList.remove('active');
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+
+    toggle.addEventListener('click', function(e){
+      e.stopPropagation();
+      var isOpen = navLinks.classList.toggle('open');
+      toggle.classList.toggle('active', isOpen);
+      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    // 点击某个导航链接后自动收起菜单
+    navLinks.querySelectorAll('a').forEach(function(link){
+      link.addEventListener('click', closeMenu);
+    });
+
+    // 点击菜单以外的地方自动收起
+    document.addEventListener('click', function(e){
+      if(!navLinks.contains(e.target) && e.target !== toggle){
+        closeMenu();
+      }
+    });
   })();
 </script>
 
