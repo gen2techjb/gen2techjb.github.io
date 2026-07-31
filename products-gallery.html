@@ -51,6 +51,16 @@
   .brand{display:flex;align-items:center;gap:12px;}
   .brand-mark{
     height:167px;width:auto;flex:none;display:block;
+    /* Logo 3D 旋转动画：40秒转一圈，鼠标悬停暂停 */
+    animation:gen2LogoSpin 40s linear infinite;
+    transform-style:preserve-3d;
+  }
+  @keyframes gen2LogoSpin{
+    0%{transform:perspective(800px) rotateY(0deg);}
+    100%{transform:perspective(800px) rotateY(360deg);}
+  }
+  .brand-mark:hover{
+    animation-play-state:paused;
   }
   .navlinks{display:flex;gap:26px;font-size:14px;color:var(--text-dim);}
   .navlinks a:hover{color:var(--amber);}
