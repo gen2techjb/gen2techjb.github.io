@@ -64,6 +64,65 @@
   }
   .navlinks{display:flex;gap:26px;font-size:14px;color:var(--text-dim);}
   .navlinks a:hover{color:var(--amber);}
+
+  /* 当前页面高亮样式 —— 像配电盘上的"带电指示灯"
+     注意：本站的 --amber 变量实际上是蓝色(#1789B3)（早期命名遗留问题），
+     并非真正的琥珀色，所以这里改用真正的琥珀/金色 --panel-amber，
+     并单独定义、不影响站内其他使用 --amber 的地方 */
+  .navlinks{--panel-amber:#FFB800;}
+  .navlinks a{position:relative;}
+
+  /* 当前页面链接：文字变金色并缓慢发光闪烁 */
+  .navlinks a.active{
+    color:var(--panel-amber) !important;
+    font-weight:700;
+    animation:navTextGlow 1.5s ease-in-out infinite;
+  }
+
+  /* 闪电图标：用 SVG 做成 mask，而不是用 ⚡ emoji 字符——
+     因为很多系统/浏览器会把 ⚡ 强制渲染成彩色 emoji 图案，
+     不会跟随 CSS 的 color 变化，也没办法用 text-shadow/filter
+     做发光效果。改用 SVG mask 后，图标永远是纯色的琥珀色矢量
+     图形，可以跟文字、下划线一样正常发光、缩放、同步闪烁。 */
+  .navlinks a.active::before{
+    content:'';
+    display:inline-block;
+    width:12px;height:14px;
+    margin-right:6px;
+    vertical-align:-2px;
+    background-color:var(--panel-amber);
+    -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M13%202%204%2014h7l-1%208%2010-12h-7z%27%20fill%3D%27white%27/%3E%3C/svg%3E");
+    mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M13%202%204%2014h7l-1%208%2010-12h-7z%27%20fill%3D%27white%27/%3E%3C/svg%3E");
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-size:contain;mask-size:contain;
+    -webkit-mask-position:center;mask-position:center;
+    filter:drop-shadow(0 0 4px var(--panel-amber)) drop-shadow(0 0 8px var(--panel-amber));
+    animation:navLightningFlash 1.5s ease-in-out infinite;
+  }
+
+  /* 发光下划线：跟闪电、文字用同样的 1.5s 节奏同步闪烁 */
+  .navlinks a.active::after{
+    content:'';
+    position:absolute;left:0;bottom:-4px;width:100%;height:2px;
+    background:var(--panel-amber);
+    box-shadow:0 0 8px var(--panel-amber), 0 0 14px var(--panel-amber);
+    animation:navLineGlow 1.5s ease-in-out infinite;
+  }
+
+  /* 三个动画节奏一致（都是 1.5s、都在 50% 达到最亮），
+     视觉上会同步"呼吸"，看起来像同一路电流在驱动 */
+  @keyframes navTextGlow{
+    0%,100%{opacity:.75;text-shadow:none;}
+    50%{opacity:1;text-shadow:0 0 10px var(--panel-amber), 0 0 18px var(--panel-amber);}
+  }
+  @keyframes navLightningFlash{
+    0%,100%{opacity:.6;transform:scale(1);}
+    50%{opacity:1;transform:scale(1.2);}
+  }
+  @keyframes navLineGlow{
+    0%,100%{opacity:.5;}
+    50%{opacity:1;}
+  }
   .nav{position:relative;}
   .nav-right{display:flex;align-items:center;gap:16px;}
   /* 手机版汉堡菜单按钮：桌面端默认隐藏 */
@@ -532,6 +591,25 @@
     document.addEventListener('click', function(e){
       if(!navLinks.contains(e.target) && e.target !== toggle){
         closeMenu();
+      }
+    });
+  })();
+
+  /* 当前页面的导航链接自动加上 "active" 类（带电指示灯效果）。
+     用脚本按当前页面文件名自动判断，而不用在每个 HTML 页面里手动
+     加 class="active" —— 这样以后新增/调整导航链接时，只需要改
+     一份共用的 Header 模板，不用逐个页面同步维护。 */
+  (function(){
+    var links = document.querySelectorAll('header .navlinks a');
+    if(!links.length) return;
+
+    var currentFile = window.location.pathname.split('/').pop();
+    if(currentFile === '' ) currentFile = 'index.html';
+
+    links.forEach(function(link){
+      var linkFile = (link.getAttribute('href') || '').split('/').pop();
+      if(linkFile === currentFile){
+        link.classList.add('active');
       }
     });
   })();
