@@ -100,17 +100,8 @@
     animation:navLightningFlash 1.5s ease-in-out infinite;
   }
 
-  /* 发光下划线：跟闪电、文字用同样的 1.5s 节奏同步闪烁 */
-  .navlinks a.active::after{
-    content:'';
-    position:absolute;left:0;bottom:-4px;width:100%;height:2px;
-    background:var(--panel-amber);
-    box-shadow:0 0 8px var(--panel-amber), 0 0 14px var(--panel-amber);
-    animation:navLineGlow 1.5s ease-in-out infinite;
-  }
-
-  /* 三个动画节奏一致（都是 1.5s、都在 50% 达到最亮），
-     视觉上会同步"呼吸"，看起来像同一路电流在驱动 */
+  /* 两个动画节奏一致（都是 1.5s ease-in-out、都在 50% 达到最亮），
+     文字发光与闪电闪烁同步"呼吸"，不再有下划线 */
   @keyframes navTextGlow{
     0%,100%{opacity:.75;text-shadow:none;}
     50%{opacity:1;text-shadow:0 0 10px var(--panel-amber), 0 0 18px var(--panel-amber);}
@@ -118,10 +109,6 @@
   @keyframes navLightningFlash{
     0%,100%{opacity:.6;transform:scale(1);}
     50%{opacity:1;transform:scale(1.2);}
-  }
-  @keyframes navLineGlow{
-    0%,100%{opacity:.5;}
-    50%{opacity:1;}
   }
   .nav{position:relative;}
   .nav-right{display:flex;align-items:center;gap:16px;}
