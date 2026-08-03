@@ -71,44 +71,25 @@
      浮在页面内容后面、Header 导航栏后面，不会挡住任何可点击的
      元素；pointer-events:none 让鼠标点击直接穿透水印。
   ------------------------------------------------------------ */
-  /* 水印容器：硬性锁定在屏幕下方 63%（37vh~100vh）
-     overflow:hidden 是关键——无论内部如何漂移，
-     水印本体永远不可能露出到这条 37vh 分界线以上，
-     从而绝对不会进入顶部导航菜单区域 */
   .watermark{
-    position:fixed;bottom:0;left:0;
-    width:100%;height:63vh;
-    overflow:hidden;
+    position:fixed;top:50%;left:50%;
+    width:130px;
+    opacity:.15;
     z-index:1;
     pointer-events:none;
+    transform:translate(-50%,-50%);
+    animation:watermarkFloat 9s ease-in-out infinite;
   }
-  /* 水印本体：放大 3 倍（约 350~450px，超小屏自动收缩），
-     position:fixed 的容器不随页面滚动 */
-  .watermark-slot{
-    position:absolute;
-    top:50%;left:50%;
-    width:clamp(240px, 32vw, 450px);
-    opacity:.15;
-    pointer-events:none;
-    transform-origin:center center;
-    animation:watermarkDrift 18s ease-in-out infinite;
-  }
-  .watermark-slot img{
+  .watermark img{
     width:100%;height:auto;display:block;
-    animation:gen2LogoSpin 40s linear infinite; /* 复用 Header Logo 已有的旋转动画：顺时针 rotateY，40 秒一圈 */
+    animation:gen2LogoSpin 40s linear infinite; /* 复用 Header Logo 已有的旋转动画 */
   }
-  /* 8 字形/随机漂移：偏移量相对自身尺寸计算，
-     配合父容器 overflow:hidden，任何时刻都不会越界到上半部 */
-  @keyframes watermarkDrift{
-    0%    {transform:translate(-50%,-50%) translate(-35%,-23%);}
-    12.5% {transform:translate(-50%,-50%) translate(8%,-38%);}
-    25%   {transform:translate(-50%,-50%) translate(38%,-8%);}
-    37.5% {transform:translate(-50%,-50%) translate(13%,20%);}
-    50%   {transform:translate(-50%,-50%) translate(-18%,33%);}
-    62.5% {transform:translate(-50%,-50%) translate(-43%,10%);}
-    75%   {transform:translate(-50%,-50%) translate(-20%,-18%);}
-    87.5% {transform:translate(-50%,-50%) translate(15%,-3%);}
-    100%  {transform:translate(-50%,-50%) translate(-35%,-23%);}
+  @keyframes watermarkFloat{
+    0%,100%{transform:translate(-50%,-50%) translateY(0px);}
+    50%{transform:translate(-50%,-50%) translateY(-40px);}
+  }
+  @media (max-width:640px){
+    .watermark{width:96px;}
   }
   .navlinks{display:flex;gap:26px;font-size:14px;color:var(--text-dim);}
   .navlinks a:hover{color:var(--amber);}
@@ -469,9 +450,51 @@
   .gallery-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:var(--surface-2);}
   .gallery-card-name{padding:16px 18px;font-size:15px;font-weight:600;color:var(--text);}
   .gallery-empty{display:none;text-align:center;color:var(--text-dim);padding:40px 0;}
+  .gallery-card{cursor:zoom-in;}
+
+  /* 产品图片放大预览（Lightbox） */
+  .gallery-lightbox{
+    display:none;
+    position:fixed;inset:0;z-index:500;
+    background:rgba(15,16,20,.88);
+    align-items:center;justify-content:center;
+    padding:40px 20px;
+    cursor:zoom-out;
+  }
+  .gallery-lightbox.show{display:flex;}
+  .gallery-lightbox-inner{
+    max-width:min(90vw,900px);max-height:85vh;
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+    cursor:default;
+  }
+  .gallery-lightbox-inner img{
+    max-width:100%;max-height:75vh;width:auto;height:auto;
+    border-radius:8px;display:block;
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.6);
+    animation:galleryLightboxZoom .25s ease;
+  }
+  @keyframes galleryLightboxZoom{
+    from{opacity:0;transform:scale(.94);}
+    to{opacity:1;transform:scale(1);}
+  }
+  .gallery-lightbox-caption{
+    color:#fff;font-size:15px;text-align:center;
+    font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;
+  }
+  .gallery-lightbox-close{
+    position:absolute;top:22px;right:26px;
+    width:40px;height:40px;border-radius:50%;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.32);
+    color:#fff;font-size:24px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .2s ease, border-color .2s ease;
+  }
+  .gallery-lightbox-close:hover{background:rgba(255,255,255,.22);border-color:#fff;}
+
   @media (max-width:640px){
     .gallery-grid{grid-template-columns:repeat(auto-fill, minmax(150px,1fr));gap:16px;}
     .gallery-card-name{font-size:13.5px;padding:12px 14px;}
+    .gallery-lightbox-close{top:14px;right:14px;width:36px;height:36px;font-size:20px;}
   }
 </style>
 </head><body>
