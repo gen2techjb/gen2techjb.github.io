@@ -72,7 +72,7 @@
      元素；pointer-events:none 让鼠标点击直接穿透水印。
   ------------------------------------------------------------ */
   /* 水印容器：硬性锁定在屏幕下方 63%（37vh~100vh）
-     overflow:hidden 是关键——无论内部如何漂移，
+     overflow:hidden 是关键——无论内部如何移动，
      水印本体永远不可能露出到这条 37vh 分界线以上，
      从而绝对不会进入顶部导航菜单区域 */
   .watermark{
@@ -82,34 +82,80 @@
     z-index:1;
     pointer-events:none;
   }
-  /* 水印本体：放大 3 倍（约 350~450px，超小屏自动收缩），
-     position:fixed 的容器不随页面滚动 */
+  /* 水印本体：放大 3 倍（约 350~450px，超小屏自动收缩）
+     走马灯 + 波浪：left 在 -15% ~ 115% 之间往返循环（相对父容器
+     .watermark 的宽度计算，与水印自身宽度无关），移动速度放慢到
+     45 秒一轮，移出屏幕外的“空跑”距离很短，循环紧凑、视觉舒缓 */
   .watermark-slot{
     position:absolute;
-    top:50%;left:50%;
+    top:50%;
+    left:-15%;                     /* 从左侧外不远的地方开始 */
     width:clamp(240px, 32vw, 450px);
     opacity:.15;
     pointer-events:none;
     transform-origin:center center;
-    animation:watermarkDrift 18s ease-in-out infinite;
+    /* 45秒完成一次从左到右的行走，速度舒缓 */
+    animation: marqueeWave 45s linear infinite;
   }
   .watermark-slot img{
     width:100%;height:auto;display:block;
-    animation:gen2LogoSpin 40s linear infinite; /* 复用 Header Logo 已有的旋转动画：顺时针 rotateY，40 秒一圈 */
+    /* Logo 旋转动画完全独立，时长保持 40s，与走马灯速度无关、互不影响 */
+    animation:gen2LogoSpin 40s linear infinite;
   }
-  /* 8 字形/随机漂移：偏移量相对自身尺寸计算，
-     配合父容器 overflow:hidden，任何时刻都不会越界到上半部 */
-  @keyframes watermarkDrift{
-    0%    {transform:translate(-50%,-50%) translate(-35%,-23%);}
-    12.5% {transform:translate(-50%,-50%) translate(8%,-38%);}
-    25%   {transform:translate(-50%,-50%) translate(38%,-8%);}
-    37.5% {transform:translate(-50%,-50%) translate(13%,20%);}
-    50%   {transform:translate(-50%,-50%) translate(-18%,33%);}
-    62.5% {transform:translate(-50%,-50%) translate(-43%,10%);}
-    75%   {transform:translate(-50%,-50%) translate(-20%,-18%);}
-    87.5% {transform:translate(-50%,-50%) translate(15%,-3%);}
-    100%  {transform:translate(-50%,-50%) translate(-35%,-23%);}
+  /* 走马灯 + 上下波动 */
+  @keyframes marqueeWave {
+    0% {
+      left: -15%;
+      transform: translateY(-50%) translateY(0px);
+    }
+    25% {
+      left: 25%;
+      transform: translateY(-50%) translateY(-25px); /* 中间偏左，上浮 */
+    }
+    50% {
+      left: 65%;
+      transform: translateY(-50%) translateY(0px);  /* 中间，回到基线 */
+    }
+    75% {
+      left: 100%;
+      transform: translateY(-50%) translateY(25px); /* 偏右，下沉 */
+    }
+    100% {
+      left: 115%;                    /* 完全移出右侧，瞬间跳回 -15%，无缝循环 */
+      transform: translateY(-50%) translateY(0px);
+    }
   }
+  /* 移动端：屏幕更窄，行走节奏适当加快，波动幅度略微收敛，
+     水印本身宽度已用 clamp()+vw 做响应式处理 */
+  @media (max-width:600px){
+    .watermark-slot{
+      animation-duration:32s;
+    }
+    @keyframes marqueeWave {
+      0% {
+        left: -15%;
+        transform: translateY(-50%) translateY(0px);
+      }
+      25% {
+        left: 25%;
+        transform: translateY(-50%) translateY(-16px);
+      }
+      50% {
+        left: 65%;
+        transform: translateY(-50%) translateY(0px);
+      }
+      75% {
+        left: 100%;
+        transform: translateY(-50%) translateY(16px);
+      }
+      100% {
+        left: 115%;
+        transform: translateY(-50%) translateY(0px);
+      }
+    }
+  }
+
+
   .navlinks{display:flex;gap:26px;font-size:14px;color:var(--text-dim);}
   .navlinks a:hover{color:var(--amber);}
 
