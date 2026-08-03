@@ -71,25 +71,44 @@
      浮在页面内容后面、Header 导航栏后面，不会挡住任何可点击的
      元素；pointer-events:none 让鼠标点击直接穿透水印。
   ------------------------------------------------------------ */
+  /* 水印容器：硬性锁定在屏幕下方 63%（37vh~100vh）
+     overflow:hidden 是关键——无论内部如何漂移，
+     水印本体永远不可能露出到这条 37vh 分界线以上，
+     从而绝对不会进入顶部导航菜单区域 */
   .watermark{
-    position:fixed;top:50%;left:50%;
-    width:130px;
-    opacity:.15;
+    position:fixed;bottom:0;left:0;
+    width:100%;height:63vh;
+    overflow:hidden;
     z-index:1;
     pointer-events:none;
-    transform:translate(-50%,-50%);
-    animation:watermarkFloat 9s ease-in-out infinite;
   }
-  .watermark img{
+  /* 水印本体：放大 3 倍（约 350~450px，超小屏自动收缩），
+     position:fixed 的容器不随页面滚动 */
+  .watermark-slot{
+    position:absolute;
+    top:50%;left:50%;
+    width:clamp(240px, 32vw, 450px);
+    opacity:.15;
+    pointer-events:none;
+    transform-origin:center center;
+    animation:watermarkDrift 18s ease-in-out infinite;
+  }
+  .watermark-slot img{
     width:100%;height:auto;display:block;
-    animation:gen2LogoSpin 40s linear infinite; /* 复用 Header Logo 已有的旋转动画 */
+    animation:gen2LogoSpin 40s linear infinite; /* 复用 Header Logo 已有的旋转动画：顺时针 rotateY，40 秒一圈 */
   }
-  @keyframes watermarkFloat{
-    0%,100%{transform:translate(-50%,-50%) translateY(0px);}
-    50%{transform:translate(-50%,-50%) translateY(-40px);}
-  }
-  @media (max-width:640px){
-    .watermark{width:96px;}
+  /* 8 字形/随机漂移：偏移量相对自身尺寸计算，
+     配合父容器 overflow:hidden，任何时刻都不会越界到上半部 */
+  @keyframes watermarkDrift{
+    0%    {transform:translate(-50%,-50%) translate(-35%,-23%);}
+    12.5% {transform:translate(-50%,-50%) translate(8%,-38%);}
+    25%   {transform:translate(-50%,-50%) translate(38%,-8%);}
+    37.5% {transform:translate(-50%,-50%) translate(13%,20%);}
+    50%   {transform:translate(-50%,-50%) translate(-18%,33%);}
+    62.5% {transform:translate(-50%,-50%) translate(-43%,10%);}
+    75%   {transform:translate(-50%,-50%) translate(-20%,-18%);}
+    87.5% {transform:translate(-50%,-50%) translate(15%,-3%);}
+    100%  {transform:translate(-50%,-50%) translate(-35%,-23%);}
   }
   .navlinks{display:flex;gap:26px;font-size:14px;color:var(--text-dim);}
   .navlinks a:hover{color:var(--amber);}
@@ -447,54 +466,55 @@
     transition:transform .2s ease, box-shadow .2s ease;
   }
   .gallery-card:hover{transform:translateY(-4px);box-shadow:0 18px 34px -16px rgba(32,36,43,0.22);}
-  .gallery-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:var(--surface-2);}
+  .gallery-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:var(--surface-2);cursor:zoom-in;}
   .gallery-card-name{padding:16px 18px;font-size:15px;font-weight:600;color:var(--text);}
   .gallery-empty{display:none;text-align:center;color:var(--text-dim);padding:40px 0;}
-  .gallery-card{cursor:zoom-in;}
-
-  /* 产品图片放大预览（Lightbox） */
-  .gallery-lightbox{
-    display:none;
-    position:fixed;inset:0;z-index:500;
-    background:rgba(15,16,20,.88);
-    align-items:center;justify-content:center;
-    padding:40px 20px;
-    cursor:zoom-out;
-  }
-  .gallery-lightbox.show{display:flex;}
-  .gallery-lightbox-inner{
-    max-width:min(90vw,900px);max-height:85vh;
-    display:flex;flex-direction:column;align-items:center;gap:16px;
-    cursor:default;
-  }
-  .gallery-lightbox-inner img{
-    max-width:100%;max-height:75vh;width:auto;height:auto;
-    border-radius:8px;display:block;
-    box-shadow:0 24px 60px -20px rgba(0,0,0,.6);
-    animation:galleryLightboxZoom .25s ease;
-  }
-  @keyframes galleryLightboxZoom{
-    from{opacity:0;transform:scale(.94);}
-    to{opacity:1;transform:scale(1);}
-  }
-  .gallery-lightbox-caption{
-    color:#fff;font-size:15px;text-align:center;
-    font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;
-  }
-  .gallery-lightbox-close{
-    position:absolute;top:22px;right:26px;
-    width:40px;height:40px;border-radius:50%;
-    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.32);
-    color:#fff;font-size:24px;line-height:1;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;
-    transition:background .2s ease, border-color .2s ease;
-  }
-  .gallery-lightbox-close:hover{background:rgba(255,255,255,.22);border-color:#fff;}
-
   @media (max-width:640px){
     .gallery-grid{grid-template-columns:repeat(auto-fill, minmax(150px,1fr));gap:16px;}
     .gallery-card-name{font-size:13.5px;padding:12px 14px;}
-    .gallery-lightbox-close{top:14px;right:14px;width:36px;height:36px;font-size:20px;}
+  }
+
+  /* ------------------------------------------------------------
+     产品图片放大预览层（Lightbox）：点击任意产品卡片图片时弹出，
+     可点击右上角关闭按钮、点击背景空白处、或按 ESC 键关闭，
+     关闭后可以重新点击任意一张图片再次打开预览。
+     用事件委托挂在 #galleryGrid 上，以后新增的产品卡片
+     不需要额外绑定任何脚本即可自动支持放大预览。
+  ------------------------------------------------------------ */
+  .gallery-lightbox{
+    position:fixed;inset:0;
+    background:rgba(20,22,26,0.88);
+    display:none;
+    align-items:center;justify-content:center;
+    z-index:200;
+    padding:40px 20px;
+    opacity:0;
+    transition:opacity .25s ease;
+  }
+  .gallery-lightbox.show{display:flex;opacity:1;}
+  .gallery-lightbox-inner{
+    position:relative;max-width:min(900px,92vw);max-height:88vh;
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+  }
+  .gallery-lightbox-inner img{
+    max-width:100%;max-height:76vh;width:auto;height:auto;
+    object-fit:contain;border-radius:6px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
+    background:var(--surface-2);
+    cursor:default;
+  }
+  .gallery-lightbox-caption{color:#fff;font-size:15px;font-weight:600;text-align:center;max-width:100%;}
+  .gallery-lightbox-close{
+    position:absolute;top:-18px;right:-18px;
+    width:38px;height:38px;border-radius:50%;
+    background:var(--surface);color:var(--text);border:none;
+    font-size:20px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 18px -8px rgba(0,0,0,0.4);
+  }
+  .gallery-lightbox-close:hover{background:var(--amber);color:#fff;}
+  @media (max-width:640px){
+    .gallery-lightbox-close{top:-14px;right:-6px;width:34px;height:34px;font-size:18px;}
   }
 </style>
 </head><body>
@@ -602,17 +622,70 @@
     </div>
     <p class="gallery-empty" id="galleryEmpty" data-en="No products match your search." data-zh="没有符合条件的产品。">No products match your search.</p>
   </div>
-
-  <!-- 产品图片放大预览：点击任意产品卡片打开，点击关闭按钮/深色遮罩/
-       按 Esc 都可以关闭，关闭后可以再点击任意一张图片重新打开 -->
-  <div class="gallery-lightbox" id="galleryLightbox" aria-hidden="true">
-    <button type="button" class="gallery-lightbox-close" id="galleryLightboxClose" aria-label="Close">&times;</button>
-    <div class="gallery-lightbox-inner">
-      <img id="galleryLightboxImg" src="" alt="">
-      <div class="gallery-lightbox-caption" id="galleryLightboxCaption"></div>
-    </div>
-  </div>
 </section>
+
+<!-- 产品图片放大预览层：默认隐藏，点击产品卡片图片后显示 -->
+<div class="gallery-lightbox" id="galleryLightbox" aria-hidden="true">
+  <div class="gallery-lightbox-inner">
+    <button type="button" class="gallery-lightbox-close" id="galleryLightboxClose" aria-label="Close">&times;</button>
+    <img id="galleryLightboxImg" src="" alt="">
+    <div class="gallery-lightbox-caption" id="galleryLightboxCaption"></div>
+  </div>
+</div>
+
+<script>
+  /* 产品图片放大预览：点击 #galleryGrid 里任意一张产品卡片图片，
+     弹出居中放大的预览层；点击右上角关闭按钮 / 点击背景空白处 /
+     按 ESC 键都可以关闭；关闭后可以重新点击任意一张图片再次打开。
+     用事件委托绑在 #galleryGrid 上，以后手动复制新增产品卡片时
+     不需要再额外绑定任何脚本，自动就能支持放大预览。 */
+  (function(){
+    var grid        = document.getElementById('galleryGrid');
+    var lightbox    = document.getElementById('galleryLightbox');
+    var lightboxImg = document.getElementById('galleryLightboxImg');
+    var caption     = document.getElementById('galleryLightboxCaption');
+    var closeBtn    = document.getElementById('galleryLightboxClose');
+    if(!grid || !lightbox || !lightboxImg || !closeBtn) return;
+
+    function openLightbox(card){
+      var img = card.querySelector('img');
+      if(!img) return;
+      lightboxImg.src = img.currentSrc || img.src;
+      lightboxImg.alt = img.alt || '';
+      var nameEl = card.querySelector('.gallery-card-name');
+      caption.textContent = nameEl ? nameEl.textContent : (img.alt || '');
+      lightbox.classList.add('show');
+      lightbox.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('g2s-lock');
+    }
+
+    function closeLightbox(){
+      lightbox.classList.remove('show');
+      lightbox.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('g2s-lock');
+    }
+
+    // 点击卡片内的图片（或卡片本身）打开预览
+    grid.addEventListener('click', function(e){
+      var card = e.target.closest ? e.target.closest('.gallery-card') : null;
+      if(!card) return;
+      openLightbox(card);
+    });
+
+    // 点击右上角关闭按钮
+    closeBtn.addEventListener('click', closeLightbox);
+
+    // 点击预览层背景（图片以外的空白处）关闭
+    lightbox.addEventListener('click', function(e){
+      if(e.target === lightbox){ closeLightbox(); }
+    });
+
+    // 按 ESC 键关闭
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && lightbox.classList.contains('show')){ closeLightbox(); }
+    });
+  })();
+</script>
 
 <script>
   /* 搜索过滤：只是在已经显示出来的卡片上做「显示/隐藏」，
@@ -732,69 +805,6 @@
       clearGallerySearch();
     });
   }
-
-  /* ------------------------------------------------------------
-     产品图片放大预览（Lightbox）
-     点击任意一张产品卡片：放大显示该产品图片
-     关闭方式：点关闭按钮 / 点深色遮罩 / 按 Esc 键
-     关闭后可以再点击同一张或其他任意一张图片，重新打开预览
-  ------------------------------------------------------------ */
-  function openGalleryLightbox(card){
-    var img = card.querySelector('img');
-    if(!img) return;
-
-    var lightbox = document.getElementById('galleryLightbox');
-    var lbImg = document.getElementById('galleryLightboxImg');
-    var caption = document.getElementById('galleryLightboxCaption');
-    if(!lightbox || !lbImg || !caption) return;
-
-    var lang = currentGalleryLang();
-    var nameEn = card.getAttribute('data-name-en') || '';
-    var nameZh = card.getAttribute('data-name-zh') || '';
-    var name = (lang === 'zh' && nameZh) ? nameZh : nameEn;
-
-    lbImg.src = img.src;
-    lbImg.alt = name;
-    caption.textContent = name;
-
-    lightbox.classList.add('show');
-    lightbox.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('g2s-lock'); // 复用已有的锁定页面滚动类名
-  }
-
-  function closeGalleryLightbox(){
-    var lightbox = document.getElementById('galleryLightbox');
-    if(!lightbox) return;
-    lightbox.classList.remove('show');
-    lightbox.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('g2s-lock');
-  }
-
-  document.querySelectorAll('#galleryGrid .gallery-card').forEach(function(card){
-    card.addEventListener('click', function(){
-      openGalleryLightbox(card);
-    });
-  });
-
-  var galleryLightboxEl = document.getElementById('galleryLightbox');
-  var galleryLightboxCloseBtn = document.getElementById('galleryLightboxClose');
-
-  if(galleryLightboxCloseBtn){
-    galleryLightboxCloseBtn.addEventListener('click', closeGalleryLightbox);
-  }
-  if(galleryLightboxEl){
-    // 点击深色遮罩本身（而不是图片/文字）时关闭
-    galleryLightboxEl.addEventListener('click', function(e){
-      if(e.target === galleryLightboxEl){
-        closeGalleryLightbox();
-      }
-    });
-  }
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){
-      closeGalleryLightbox();
-    }
-  });
 </script>
 
 <footer class="wrap">
