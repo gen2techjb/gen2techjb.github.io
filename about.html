@@ -65,8 +65,11 @@
 
   /* ------------------------------------------------------------
      全屏浮动水印：使用导航栏同一张 Logo 图片（脚本克隆，不重复
-     嵌入图片数据），固定在视口正中央附近缓慢上下漂浮，同时自身
-     用跟 Header Logo 一样的 gen2LogoSpin 动画持续旋转。
+     嵌入图片数据）。四个实例通过负值 animation-delay 错峰启动，
+     每 6 秒衔接一个新水印，任一时刻画面中央都有水印存在，不再
+     出现"空窗期"。上下浮动 / 水平走马灯 / 3D 旋转三层动画分别
+     作用在三层嵌套元素（.watermark-slot / .watermark-float / img）
+     各自独立的 transform 上，可以同时运行、互不覆盖。
      z-index 特意设为 1（比 Header 的 50 低很多），确保水印永远
      浮在页面内容后面、Header 导航栏后面，不会挡住任何可点击的
      元素；pointer-events:none 让鼠标点击直接穿透水印。
@@ -82,76 +85,83 @@
     z-index:1;
     pointer-events:none;
   }
-  /* 水印本体：放大 3 倍（约 350~450px，超小屏自动收缩）
-     走马灯 + 波浪：left 在 -15% ~ 115% 之间往返循环（相对父容器
-     .watermark 的宽度计算，与水印自身宽度无关），移动速度放慢到
-     45 秒一轮，移出屏幕外的“空跑”距离很短，循环紧凑、视觉舒缓 */
+  /* 水印本体：在原尺寸基础上整体放大 30%（240/32/450 → 312/41.6/585，
+     超小屏自动收缩，clamp 响应式比例保持不变）。
+     走马灯：left 在 -15% ~ 115% 之间往返循环（相对父容器 .watermark
+     的宽度计算，与水印自身宽度无关）。周期改为 24 秒一轮，配合下方
+     4 个实例、每个错开 6 秒（24÷4=6），确保任一瞬间屏幕上都至少有
+     一个水印正处于中心可视区域。
+     注意：这一层只负责"左右走位"（marqueeWave 现在只动画 left），
+     不再兼管上下漂浮——上下漂浮已独立拆到子层 .watermark-float，
+     避免同一个元素的 transform 被两段动画互相覆盖。 */
   .watermark-slot{
     position:absolute;
     top:50%;
-    left:-15%;                     /* 从左侧外不远的地方开始 */
-    width:clamp(240px, 32vw, 450px);
+    left:-15%;
+    width:clamp(312px, 41.6vw, 585px);   /* 240 / 32 / 450 各放大 30% */
     opacity:.15;
     pointer-events:none;
     transform-origin:center center;
-    /* 45秒完成一次从左到右的行走，速度舒缓 */
-    animation: marqueeWave 45s linear infinite;
+    transform: translateY(-50%);          /* 固定垂直居中基准，不参与关键帧动画 */
+    animation: marqueeWave 24s linear infinite;
   }
+  /* 4 个实例的错峰延迟：0s / -6s / -12s / -18s。
+     用负值 delay = 动画在页面一加载就已经"预跑"到对应进度直接播放，
+     不用等待，从第一秒起就是 4 个水印均匀分布、依次接力的状态，
+     实现"每 6 秒衔接一个新水印、永不间断"。 */
+  .watermark-slot:nth-child(1){ animation-delay: 0s;   }
+  .watermark-slot:nth-child(2){ animation-delay: -6s;  }
+  .watermark-slot:nth-child(3){ animation-delay: -12s; }
+  .watermark-slot:nth-child(4){ animation-delay: -18s; }
+
+  /* 上下浮动层：独立出来的"呼吸式"漂浮，只管 translateY，
+     幅度加大到 ±50px（40~60px 区间内），5 秒一次往返（4~6 秒区间），
+     ease-in-out 更接近自然呼吸的加减速感。它和走马灯（作用在父级
+     left 属性上）、Logo 自转（作用在 img 的 transform 上）三者各自
+     运行在不同元素 / 不同属性上，可以完全同时独立播放、互不干扰。 */
+  .watermark-float{
+    animation: float-up-down 5s ease-in-out infinite;
+    will-change: transform;
+  }
+  @keyframes float-up-down {
+    0%   { transform: translateY(0px);   }
+    50%  { transform: translateY(-50px); } /* 上浮 50px，可按需调 40~60px */
+    100% { transform: translateY(0px);   }
+  }
+
   .watermark-slot img{
     width:100%;height:auto;display:block;
-    /* Logo 旋转动画完全独立，时长保持 40s，与走马灯速度无关、互不影响 */
+    /* Logo 旋转动画完全独立，时长保持 40s，与走马灯速度、上下浮动都无关 */
     animation:gen2LogoSpin 40s linear infinite;
   }
-  /* 走马灯 + 上下波动 */
+
+  /* 走马灯：现在只负责水平位移（left），不再包含 translateY——
+     垂直方向已交给 .watermark-float 独立控制 */
   @keyframes marqueeWave {
-    0% {
-      left: -15%;
-      transform: translateY(-50%) translateY(0px);
-    }
-    25% {
-      left: 25%;
-      transform: translateY(-50%) translateY(-25px); /* 中间偏左，上浮 */
-    }
-    50% {
-      left: 65%;
-      transform: translateY(-50%) translateY(0px);  /* 中间，回到基线 */
-    }
-    75% {
-      left: 100%;
-      transform: translateY(-50%) translateY(25px); /* 偏右，下沉 */
-    }
-    100% {
-      left: 115%;                    /* 完全移出右侧，瞬间跳回 -15%，无缝循环 */
-      transform: translateY(-50%) translateY(0px);
-    }
+    0%   { left: -15%; }
+    50%  { left: 65%;  }
+    100% { left: 115%; }   /* 完全移出右侧，瞬间跳回 -15%，无缝循环 */
   }
-  /* 移动端：屏幕更窄，行走节奏适当加快，波动幅度略微收敛，
-     水印本身宽度已用 clamp()+vw 做响应式处理 */
+
+  /* 移动端：屏幕更窄，行走节奏适当加快，浮动幅度略微收敛，
+     水印本身宽度已用 clamp()+vw 做响应式处理。
+     移动端周期改为 20 秒，4 个实例仍按 20÷4=5 秒均匀错峰，
+     保持"每 5 秒衔接一个新水印"的连续感 */
   @media (max-width:600px){
     .watermark-slot{
-      animation-duration:32s;
+      animation-duration: 20s;
     }
-    @keyframes marqueeWave {
-      0% {
-        left: -15%;
-        transform: translateY(-50%) translateY(0px);
-      }
-      25% {
-        left: 25%;
-        transform: translateY(-50%) translateY(-16px);
-      }
-      50% {
-        left: 65%;
-        transform: translateY(-50%) translateY(0px);
-      }
-      75% {
-        left: 100%;
-        transform: translateY(-50%) translateY(16px);
-      }
-      100% {
-        left: 115%;
-        transform: translateY(-50%) translateY(0px);
-      }
+    .watermark-slot:nth-child(1){ animation-delay: 0s;   }
+    .watermark-slot:nth-child(2){ animation-delay: -5s;  }
+    .watermark-slot:nth-child(3){ animation-delay: -10s; }
+    .watermark-slot:nth-child(4){ animation-delay: -15s; }
+    .watermark-float{
+      animation-duration: 4s;
+    }
+    @keyframes float-up-down {
+      0%   { transform: translateY(0px);   }
+      50%  { transform: translateY(-32px); }
+      100% { transform: translateY(0px);   }
     }
   }
 
@@ -531,7 +541,10 @@
 
 <!-- 全屏浮动水印：Logo 图片由脚本从 Header 中克隆而来，不新增图片资源 -->
 <div class="watermark" id="siteWatermark" aria-hidden="true">
-  <div class="watermark-slot" id="watermarkSlot"></div>
+  <div class="watermark-slot"><div class="watermark-float"></div></div>
+  <div class="watermark-slot"><div class="watermark-float"></div></div>
+  <div class="watermark-slot"><div class="watermark-float"></div></div>
+  <div class="watermark-slot"><div class="watermark-float"></div></div>
 </div>
 
 <header id="top">
@@ -700,15 +713,19 @@
     });
   })();
 
-  /* 浮动水印：把 Header 里已经存在的 Logo 图片复制一份放进水印容器，
-     不新增、不重复内嵌图片数据 */
+  /* 浮动水印：把 Header 里已经存在的 Logo 图片复制一份，分别塞进
+     4 个 .watermark-float 容器里（不新增、不重复内嵌图片数据），
+     配合 CSS 里 4 个 .watermark-slot 的错峰 animation-delay，
+     实现每 6 秒衔接一个新水印、不间断出现 */
   (function(){
     var headerLogo = document.querySelector('header .brand-mark');
-    var slot = document.getElementById('watermarkSlot');
-    if(!headerLogo || !slot) return;
-    var clone = headerLogo.cloneNode(true);
-    clone.removeAttribute('id');
-    slot.appendChild(clone);
+    var floats = document.querySelectorAll('#siteWatermark .watermark-float');
+    if(!headerLogo || !floats.length) return;
+    floats.forEach(function(floatEl){
+      var clone = headerLogo.cloneNode(true);
+      clone.removeAttribute('id');
+      floatEl.appendChild(clone);
+    });
   })();
 </script>
 
