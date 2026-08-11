@@ -135,7 +135,24 @@
   }
 
 
-  .navlinks{display:flex;gap:26px;font-size:14px;color:var(--text-dim);}
+  .navlinks{
+    display:flex;
+    flex:1 1 auto;
+    min-width:0;
+    flex-wrap:nowrap;
+    white-space:nowrap;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+    gap:26px;
+    font-size:14px;
+    color:var(--text-dim);
+  }
+  .navlinks::-webkit-scrollbar{display:none;}
+  .navlinks a{flex:0 0 auto;}
+  .navlinks::after{content:'';flex:0 0 4px;}
   .navlinks a:hover{color:var(--amber);}
 
   /* 当前页面高亮样式 —— 像配电盘上的"带电指示灯"
@@ -184,7 +201,7 @@
     50%{opacity:1;transform:scale(1.2);}
   }
   .nav{position:relative;}
-  .nav-right{display:flex;align-items:center;gap:16px;}
+  .nav-right{display:flex;align-items:center;gap:16px;flex:none;}
   /* 手机版汉堡菜单按钮：桌面端默认隐藏 */
   .nav-toggle{
     display:none;flex-direction:column;justify-content:center;align-items:center;
@@ -371,6 +388,10 @@
       background:var(--surface);border-top:1px solid var(--line);
       box-shadow:0 16px 32px -18px rgba(32,36,43,0.28);
       padding:6px 0;z-index:40;
+      /* 重置桌面端为了防止换行/溢出而新增的属性，
+         移动端汉堡菜单展开面板的外观与行为保持原样 */
+      flex:none;min-width:auto;white-space:normal;
+      overflow-x:visible;overflow-y:visible;
     }
     .navlinks.open{display:flex;}
     .navlinks a{padding:14px 28px;border-bottom:1px solid var(--line);}
@@ -524,6 +545,7 @@
       <a href="products.html" data-en="Products" data-zh="产品">Products</a>
       <a href="products-gallery.html" data-en="Products Gallery" data-zh="产品图库">Products Gallery</a>
       <a href="customers.html" data-en="Customers" data-zh="客户">Customers</a>
+      <a href="certifications.html" data-en="Certifications" data-zh="认证">Certifications</a>
       <a href="contact.html" data-en="Contact" data-zh="联系我们">Contact</a>
       <a href="join-us.html" data-en="Join Us" data-zh="加入我们">Join Us</a>
     </nav>
@@ -675,6 +697,11 @@
       var linkFile = (link.getAttribute('href') || '').split('/').pop();
       if(linkFile === currentFile){
         link.classList.add('active');
+        // 确保当前页面对应的高亮链接（如加了图标后变宽的 "Join Us"）
+        // 不会被横向滚动容器的默认滚动位置裁掉，自动滚入可视区域
+        if(typeof link.scrollIntoView === 'function'){
+          link.scrollIntoView({inline:'nearest', block:'nearest'});
+        }
       }
     });
   })();
