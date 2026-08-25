@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="view-transition" content="same-origin">
 <title>Contact - Gen2 Tech Electrical Engineering Sdn Bhd</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -519,6 +520,100 @@
     .gallery-grid{grid-template-columns:repeat(auto-fill, minmax(150px,1fr));gap:16px;}
     .gallery-card-name{font-size:13.5px;padding:12px 14px;}
   }
+
+/* ============================================================
+   翻书式页面切换过渡动画（View Transitions API - 跨文档版本）
+   - Header 导航栏固定不动，仅做极淡的淡入淡出
+   - 页面主体做"翻书"效果：旧页面左旋淡出，新页面右侧滑入淡入
+   ============================================================ */
+@view-transition {
+  navigation: auto;
+}
+
+/* Header 独立成组，不参与下面的翻书动画，只做极淡的淡入淡出 */
+header#top {
+  view-transition-name: site-header;
+  view-transition-class: site-header;
+}
+
+/* 页面主体（root）翻书动画时长与缓动 */
+::view-transition-group(root) {
+  animation-duration: 0.7s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::view-transition-old(root) {
+  animation: book-flip-out 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+  transform-origin: left center;
+}
+
+::view-transition-new(root) {
+  animation: book-flip-in 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+  transform-origin: right center;
+}
+
+@keyframes book-flip-out {
+  from {
+    opacity: 1;
+    transform: perspective(1400px) rotateY(0deg) translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: perspective(1400px) rotateY(-8deg) translateX(-3%);
+  }
+}
+
+@keyframes book-flip-in {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateY(8deg) translateX(3%);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1400px) rotateY(0deg) translateX(0);
+  }
+}
+
+/* Header 分组：不使用翻书动画，只做极其细微的淡入淡出，绝无旋转/位移 */
+::view-transition-group(site-header) {
+  animation-duration: 0.25s;
+  animation-timing-function: ease-in-out;
+}
+
+::view-transition-old(site-header),
+::view-transition-new(site-header) {
+  /* 覆盖默认的交叉淡出/淡入位移，保证 Header 完全静止 */
+  height: 100%;
+  transform: none !important;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(site-header) {
+  animation: header-fade-out 0.25s ease-in-out both;
+}
+
+::view-transition-new(site-header) {
+  animation: header-fade-in 0.25s ease-in-out both;
+}
+
+@keyframes header-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0.92; }
+}
+
+@keyframes header-fade-in {
+  from { opacity: 0.92; }
+  to   { opacity: 1; }
+}
+
+/* 回滚开关：给 <html> 加上 class="no-view-transition" 即可一键禁用
+   （见文末回滚说明），或直接删除本段 CSS 与上面的 meta 标签。 */
+html.no-view-transition {
+  view-transition-name: none;
+}
+html.no-view-transition header#top {
+  view-transition-name: none;
+}
 </style>
 </head><body>
 <div id="intro-splash" aria-hidden="true">
